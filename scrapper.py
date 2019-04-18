@@ -30,12 +30,15 @@ def links(max_p, current_page=1):
         for item in grid:
             res.append(item['node']['publicUrl'])
 
+        print(f'Page {current_page} treated.')
         res += links(max_p, current_page+1)
 
     return res
 
 
 if __name__ == '__main__':
-    max_page = int(sys.argv[1])
-    for item in links(max_page):
-        print(item)
+    max_page = 2254  # int(sys.argv[1])
+    links = links(max_page)
+    print(len(links))
+    with open('links', mode='wb') as f:
+        pickle.dump(links, f)
