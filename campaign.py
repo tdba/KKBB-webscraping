@@ -3,14 +3,15 @@
 
 
 class Campaign:
-    def __init__(self, link, project_holder, current_amount, aimed_amount, start_date, end_date, description):
+    def __init__(self, link, title, description, project_holder, current_amount, aimed_amount, start_date, end_date):
         self.link = link
+        self.title = title
+        self.description = description
         self.project_holder = project_holder
         self.current_amount = current_amount
         self.aimed_amount = aimed_amount
         self.start_date = start_date
         self.end_date = end_date
-        self.description = description
         self.actualities = []
         self.donations = []
         self.contributors = []
