@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 
 
+import datetime
+
+
 class Campaign:
     def __init__(self, link, title, description, project_holder, current_amount, aimed_amount, start_date, end_date):
         self.link = link
@@ -12,6 +15,8 @@ class Campaign:
         self.aimed_amount = aimed_amount
         self.start_date = start_date
         self.end_date = end_date
+        self.duration =
+        self.done =
         self.actualities = []
         self.donations = []
         self.contributors = []
@@ -30,6 +35,7 @@ class Donation:
 
 
 class News:
-    def __init__(self, content, date):
+    def __init__(self, content, date, kind=None):
         self.content = content
         self.date = date
+        self.kind = kind
