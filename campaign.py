@@ -15,8 +15,8 @@ class Campaign:
         self.aimed_amount = aimed_amount
         self.start_date = start_date
         self.end_date = end_date
-        self.duration =
-        self.done =
+        self.duration = end_date - start_date #.duration()?
+        self.done = end_date <= datetime.today() #format of the dates?
         self.actualities = []
         self.donations = []
         self.contributors = []
