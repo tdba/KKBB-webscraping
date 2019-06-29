@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 
 
-import datetime
+import datetime as dt
 
 
 class Campaign:
-    def __init__(self, link, title, description, project_holder, current_amount, aimed_amount, start_date, end_date):
+    def __init__(self, link, title, description, project_holder, current_amount, aimed_amount, end_date):
         self.link = link
         self.title = title
         self.description = description
@@ -14,8 +14,18 @@ class Campaign:
         self.current_amount = current_amount
         self.aimed_amount = aimed_amount
         self.achieved = aimed_amount <= current_amount
-        self.end_date = end_date
-        self.done = end_date <= datetime.today() #format of the dates?
+
+        if 'restant' in end_date:
+            self.done = False
+            if 'restante' in end_date:
+                self.end_date = dt.date.today()
+            else:
+                d = dt.timedelta(days=int(end_date[:2].strip()))
+                self.end_date = dt.date.today() + d
+        else:
+            self.end_date = dt.datetime.strptime(end_date, '%A, %B %d, %Y').date()
+            self.done = end_date <= dt.date.today()
+
         self.actualities = []
         self.donations = []
         self.contributors = []

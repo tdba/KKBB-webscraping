@@ -73,8 +73,6 @@ def data_extraction(urls):
         actual_value = int(values[0].text[:-1].strip().replace(u'\xa0', u''))
         aimed_value = int(values[1].text[3:-1].strip().replace(u'\xa0', u''))
 
-
-
     return res
 
 
@@ -86,4 +84,4 @@ if __name__ == '__main__':
 
     # with open('links', 'rb') as f:
     #     campaign_links = pickle.load(f)
-    data_extraction(['https://www.kisskissbankbank.com/fr/projects/timada-une-expedition-scientifique-etudiante-au-coeur-de-madagascar'])#campaign_links)
+    data_extraction(['https://www.kisskissbankbank.com/fr/projects/retour-du-cheval-dans-les-vignes'])#campaign_links)
