@@ -15,9 +15,9 @@ class Campaign:
         self.aimed_amount = aimed_amount
         self.achieved = aimed_amount <= current_amount
 
-        if 'restant' in end_date:
+        if 'jour' in end_date or 'heure' in end_date:
             self.done = False
-            if 'restante' in end_date:
+            if 'heure' in end_date:
                 self.end_date = dt.date.today()
             else:
                 d = dt.timedelta(days=int(end_date[:2].strip()))
@@ -44,7 +44,8 @@ class Donation:
 
 
 class News:
-    def __init__(self, content, date, kind=None):
+    def __init__(self, title, content, date, kind=None):
+        self.title = title
         self.content = content
         self.date = date
         self.kind = kind

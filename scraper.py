@@ -4,6 +4,7 @@
 
 from bs4 import BeautifulSoup
 import requests
+from requests_html import HTMLSession
 
 from time import sleep
 from random import randint
@@ -56,6 +57,19 @@ def links(max_p, current_page=1):
 
 
 def data_extraction(urls):
+    def actualities_extraction(p):
+        resp = requests.get(p.link + '/tabs/news')
+        bsoup = BeautifulSoup(resp.content, 'html5lib')
+        for item in bsoup.select('div.marger__StyledMarger-q3lecu-0.denjnR'):
+            print(item)
+            date = item.select_one('div.marger__StyledMarger-q3lecu-0.jgfcQX > span').text
+            news_title = item.find('h1').text
+            #content = item.select('div.').text
+            print(date)
+            print(news_title)
+            actuality = None
+            p.actualities.append(actuality)
+
     res = []
 
     for url in urls:
@@ -72,6 +86,11 @@ def data_extraction(urls):
         values = prompt[1].find_all('div')
         actual_value = int(values[0].text[:-1].strip().replace(u'\xa0', u''))
         aimed_value = int(values[1].text[3:-1].strip().replace(u'\xa0', u''))
+
+        project = campaign.Campaign(url, title, desc, project_holder, actual_value, aimed_value, end_date)
+        actualities_extraction(project)
+
+        res.append(project)
 
     return res
 
