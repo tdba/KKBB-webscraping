@@ -47,5 +47,5 @@ class News:
     def __init__(self, title, content, date, kind=None):
         self.title = title
         self.content = content
-        self.date = date
+        self.date = dt.datetime.strptime(date, '%A, %B %d, %Y').date()
         self.kind = kind

@@ -5,6 +5,8 @@
 from bs4 import BeautifulSoup
 import requests
 from requests_html import HTMLSession
+from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
 
 from time import sleep
 from random import randint
@@ -57,23 +59,8 @@ def links(max_p, current_page=1):
 
 
 def data_extraction(urls):
-    def actualities_extraction(p):
-        resp = requests.get(p.link + '/tabs/news')
-        bsoup = BeautifulSoup(resp.content, 'html5lib')
-        for item in bsoup.select('div.marger__StyledMarger-q3lecu-0.denjnR'):
-            print(item)
-            date = item.select_one('div.marger__StyledMarger-q3lecu-0.jgfcQX > span').text
-            news_title = item.find('h1').text
-            #content = item.select('div.').text
-            print(date)
-            print(news_title)
-            actuality = None
-            p.actualities.append(actuality)
-
-    res = []
-
-    for url in urls:
-        response = requests.get(url + '/tabs/description')
+    def info_extraction(link):
+        response = requests.get(link + '/tabs/description')
         soup = BeautifulSoup(response.content, 'html5lib')
 
         title = soup.find('h1', attrs={'data-test-id': 'project-title'}).text
@@ -87,8 +74,46 @@ def data_extraction(urls):
         actual_value = int(values[0].text[:-1].strip().replace(u'\xa0', u''))
         aimed_value = int(values[1].text[3:-1].strip().replace(u'\xa0', u''))
 
-        project = campaign.Campaign(url, title, desc, project_holder, actual_value, aimed_value, end_date)
+        return campaign.Campaign(url, title, desc, project_holder, actual_value, aimed_value, end_date)
+
+    def actualities_extraction(p):
+        resp = requests.get(p.link + '/tabs/news')
+        soup = BeautifulSoup(resp.content, 'html5lib')
+        for item in soup.select('div.marger__StyledMarger-q3lecu-0.denjnR'):
+            date = item.select_one('div.marger__StyledMarger-q3lecu-0.jgfcQX > span').text
+            news_title = item.find('h1').text
+            content = item.select_one('div.kiss-RichText.marger__StyledMarger-q3lecu-0.WSKaG > div').text
+            actuality = campaign.News(news_title, content, date)
+            p.actualities.append(actuality)
+
+    def donations_extractions(p):
+        browser = webdriver.Chrome()
+        browser.get(p.link + '/tabs/backers')
+        try:
+            button = browser.find_element_by_xpath("//button[text()='En voir plus']")
+            while button:
+                browser.execute_script("arguments[0].click();", button)
+                print('bouton\n')
+                sleep(1)
+                browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                button = browser.find_element_by_xpath("//button[text()='En voir plus']")
+        except NoSuchElementException:
+            pass
+
+
+        """resp = requests.get(p.link + '/tabs/backers')
+        soup = BeautifulSoup(resp.content, 'lxml')
+        with open('test', 'w+') as f: f.write(soup.prettify())
+        for item in soup.select('div.backers-list__StyledItem-sc-13o55g1.0.dJsYas'):
+            print(item)"""
+        #browser.close()
+
+    res = []
+
+    for url in urls:
+        project = info_extraction(url)
         actualities_extraction(project)
+        donations_extractions(project)
 
         res.append(project)
 
@@ -103,4 +128,4 @@ if __name__ == '__main__':
 
     # with open('links', 'rb') as f:
     #     campaign_links = pickle.load(f)
-    data_extraction(['https://www.kisskissbankbank.com/fr/projects/retour-du-cheval-dans-les-vignes'])#campaign_links)
+    data_extraction(['https://www.kisskissbankbank.com/fr/projects/retour-du-cheval-dans-les-vignes'])  # campaign_links)
