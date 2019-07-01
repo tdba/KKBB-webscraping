@@ -122,6 +122,7 @@ def data_extraction(urls):
 
         res.append(project)
         print(f'Project {project.title} treated.')
+        sleep(randint(0, 4))
 
     driver.close()
     return res
