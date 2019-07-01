@@ -16,13 +16,13 @@ class Campaign:
         self.aimed_amount = aimed_amount
         self.achieved = aimed_amount <= current_amount
 
-        if 'jour' in end_date or 'heure' in end_date:
+        if 'jour' in end_date or 'heure' in end_date or 'minute' in end_date:
             self.done = False
-            if 'heure' in end_date:
-                self.end_date = dt.date.today()
-            else:
+            if 'jour' in end_date:
                 d = dt.timedelta(days=int(end_date[:2].strip()))
                 self.end_date = dt.date.today() + d
+            else:
+                self.end_date = dt.date.today()
         else:
             self.end_date = dt.datetime.strptime(end_date, '%A, %B %d, %Y').date()
             self.done = self.end_date <= dt.date.today()

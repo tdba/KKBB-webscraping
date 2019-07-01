@@ -4,7 +4,6 @@
 
 from bs4 import BeautifulSoup
 import requests
-from requests_html import HTMLSession
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 
@@ -63,9 +62,9 @@ def data_extraction(urls):
         response = requests.get(link + '/tabs/description')
         soup = BeautifulSoup(response.content, 'html5lib')
 
-        title = soup.find('h1', attrs={'data-test-id': 'project-title'}).text
+        title = soup.find('head').find('title').text
         desc = soup.find('head').find('meta', attrs={'name': 'description'})['content']
-        project_holder = URL + soup.find('div', class_='owner-info__StyledOwner-sc-1r3rkij-2 gDZNgQ').a['href']
+        project_holder = URL + soup.select_one('div.owner-info__StyledOwner-sc-1r3rkij-2.gDZNgQ').a['href']
 
         prompt_class = 'informations-and-media__StyledInfo-sc-121rta3-3 fzHbGm marger__StyledMarger-q3lecu-0 hAgZUM'
         prompt = soup.find_all('div', class_=prompt_class)[1:]
@@ -97,13 +96,13 @@ def data_extraction(urls):
             button = browser.find_element_by_xpath("//button[text()='En voir plus']")
             while button:
                 browser.execute_script("arguments[0].click();", button)
-                sleep(0.4)
+                sleep(0.3)
                 button = browser.find_element_by_xpath("//button[text()='En voir plus']")
         except NoSuchElementException:
             pass
 
-        innerHTML = browser.execute_script("return document.body.innerHTML")
-        soup = BeautifulSoup(innerHTML, 'html5lib')
+        inner_html = browser.execute_script("return document.body.innerHTML")
+        soup = BeautifulSoup(inner_html, 'html5lib')
         for item in soup.select('div.backers-list__StyledCard-sc-13o55g1-1.gKLrNb'):
             user = item.select_one('div > span').text
             gift = item.select('div.marger__StyledMarger-q3lecu-0.bsSajs > p > span')
@@ -117,15 +116,17 @@ def data_extraction(urls):
             p.add_donation(donation)
 
     res = []
-    driver = webdriver.Chrome()
+    driver = webdriver.Chrome("C:\\Users\\Tang\\Downloads\\chromedriver.exe")
+    i = 1
 
     for url in urls:
+        print(f'Project {i}: {url} scrapping.')
         project = info_extraction(url)
         actualities_extraction(project)
         donations_extractions(project, driver)
 
         res.append(project)
-        print(f'Project {project.title} treated.')
+        i += 1
         sleep(randint(0, 2))
 
     driver.close()
