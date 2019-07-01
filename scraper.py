@@ -71,8 +71,11 @@ def data_extraction(urls):
         prompt = soup.find_all('div', class_=prompt_class)[1:]
         end_date = prompt[0].div.text
         values = prompt[1].find_all('div')
-        actual_value = int(values[0].text[:-1].strip().replace(u'\xa0', u''))
-        aimed_value = int(values[1].text[3:-1].strip().replace(u'\xa0', u''))
+        try:
+            actual_value = int(values[0].text[:-1].strip().replace(u'\xa0', u''))
+            aimed_value = int(values[1].text[3:-1].strip().replace(u'\xa0', u''))
+        except ValueError:
+            actual_value, aimed_value = 0, 0
 
         return campaign.Campaign(url, title, desc, project_holder, actual_value, aimed_value, end_date)
 
@@ -107,9 +110,10 @@ def data_extraction(urls):
             if len(gift) == 2:
                 amount = int(gift[0].text[:-1].strip().replace(u'\xa0', u''))
                 date = gift[1].text.strip()
+                donation = campaign.Donation(user, date, amount)
             else:
                 date = gift[0].text.strip()
-            donation = campaign.Donation(user, date, amount)
+                donation = campaign.Donation(user, date)
             p.add_donation(donation)
 
     res = []
@@ -122,7 +126,7 @@ def data_extraction(urls):
 
         res.append(project)
         print(f'Project {project.title} treated.')
-        sleep(randint(0, 4))
+        sleep(randint(0, 2))
 
     driver.close()
     return res
