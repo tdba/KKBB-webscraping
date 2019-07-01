@@ -79,44 +79,51 @@ def data_extraction(urls):
     def actualities_extraction(p):
         resp = requests.get(p.link + '/tabs/news')
         soup = BeautifulSoup(resp.content, 'html5lib')
-        for item in soup.select('div.marger__StyledMarger-q3lecu-0.denjnR'):
-            date = item.select_one('div.marger__StyledMarger-q3lecu-0.jgfcQX > span').text
-            news_title = item.find('h1').text
-            content = item.select_one('div.kiss-RichText.marger__StyledMarger-q3lecu-0.WSKaG > div').text
-            actuality = campaign.News(news_title, content, date)
-            p.actualities.append(actuality)
+        news = soup.select('div.marger__StyledMarger-q3lecu-0.denjnR')
+        if news[0].section:
+            for item in news:
+                date = item.select_one('div.marger__StyledMarger-q3lecu-0.jgfcQX > span').text
+                news_title = item.find('h1').text
+                content = item.select_one('div.kiss-RichText.marger__StyledMarger-q3lecu-0.WSKaG > div').text
+                actuality = campaign.News(news_title, content, date)
+                p.actualities.append(actuality)
 
-    def donations_extractions(p):
-        browser = webdriver.Chrome()
+    def donations_extractions(p, browser):
         browser.get(p.link + '/tabs/backers')
         try:
             button = browser.find_element_by_xpath("//button[text()='En voir plus']")
             while button:
                 browser.execute_script("arguments[0].click();", button)
-                print('bouton\n')
-                sleep(1)
-                browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                sleep(0.4)
                 button = browser.find_element_by_xpath("//button[text()='En voir plus']")
         except NoSuchElementException:
             pass
 
-
-        """resp = requests.get(p.link + '/tabs/backers')
-        soup = BeautifulSoup(resp.content, 'lxml')
-        with open('test', 'w+') as f: f.write(soup.prettify())
-        for item in soup.select('div.backers-list__StyledItem-sc-13o55g1.0.dJsYas'):
-            print(item)"""
-        #browser.close()
+        innerHTML = browser.execute_script("return document.body.innerHTML")
+        soup = BeautifulSoup(innerHTML, 'html5lib')
+        for item in soup.select('div.backers-list__StyledCard-sc-13o55g1-1.gKLrNb'):
+            user = item.select_one('div > span').text
+            gift = item.select('div.marger__StyledMarger-q3lecu-0.bsSajs > p > span')
+            if len(gift) == 2:
+                amount = int(gift[0].text[:-1].strip().replace(u'\xa0', u''))
+                date = gift[1].text.strip()
+            else:
+                date = gift[0].text.strip()
+            donation = campaign.Donation(user, date, amount)
+            p.add_donation(donation)
 
     res = []
+    driver = webdriver.Chrome()
 
     for url in urls:
         project = info_extraction(url)
         actualities_extraction(project)
-        donations_extractions(project)
+        donations_extractions(project, driver)
 
         res.append(project)
+        print(f'Project {project.title} treated.')
 
+    driver.close()
     return res
 
 
@@ -126,6 +133,8 @@ if __name__ == '__main__':
     # with open('links', 'wb') as f:
     #     pickle.dump(campaign_links, f)
 
-    # with open('links', 'rb') as f:
-    #     campaign_links = pickle.load(f)
-    data_extraction(['https://www.kisskissbankbank.com/fr/projects/retour-du-cheval-dans-les-vignes'])  # campaign_links)
+    with open('links', 'rb') as f:
+        campaign_links = pickle.load(f)
+    campaigns = data_extraction(campaign_links)
+    with open('campaigns', 'wb') as f:
+        pickle.dump(campaigns, f)

@@ -3,6 +3,7 @@
 
 
 import datetime as dt
+import dateparser
 
 
 class Campaign:
@@ -24,7 +25,7 @@ class Campaign:
                 self.end_date = dt.date.today() + d
         else:
             self.end_date = dt.datetime.strptime(end_date, '%A, %B %d, %Y').date()
-            self.done = end_date <= dt.date.today()
+            self.done = self.end_date <= dt.date.today()
 
         self.actualities = []
         self.donations = []
@@ -33,14 +34,14 @@ class Campaign:
     def add_donation(self, donation):
         if donation.user not in self.contributors:
             self.contributors.append(donation.user)
-        self.donatiosn.append(donation)
+        self.donations.append(donation)
 
 
 class Donation:
-    def __init__(self, user, amount, date):
+    def __init__(self, user, date, amount=0):
         self.user = user
         self.amount = amount
-        self.date = date
+        self.date = dateparser.parse(date).date()
 
 
 class News:
