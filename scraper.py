@@ -10,6 +10,7 @@ from selenium.common.exceptions import NoSuchElementException
 from time import sleep
 from random import randint
 from math import ceil
+from copy import deepcopy
 import json
 import pickle
 
@@ -57,7 +58,7 @@ def links(max_p, current_page=1):
     return res
 
 
-def data_extraction(urls):
+def data_extraction(urls, untreated_url):
     def info_extraction(link):
         response = requests.get(link + '/tabs/description')
         soup = BeautifulSoup(response.content, 'html5lib')
@@ -74,9 +75,9 @@ def data_extraction(urls):
             actual_value = int(values[0].text[:-1].strip().replace(u'\xa0', u''))
             aimed_value = int(values[1].text[3:-1].strip().replace(u'\xa0', u''))
         except ValueError:
-            actual_value, aimed_value = 0, 0
+            actual_value, aimed_value = 'No monetary information', 'No monetary information'
 
-        return campaign.Campaign(url, title, desc, project_holder, actual_value, aimed_value, end_date)
+        return campaign.Campaign(link, title, desc, project_holder, actual_value, aimed_value, end_date)
 
     def actualities_extraction(p):
         resp = requests.get(p.link + '/tabs/news')
@@ -96,7 +97,7 @@ def data_extraction(urls):
             button = browser.find_element_by_xpath("//button[text()='En voir plus']")
             while button:
                 browser.execute_script("arguments[0].click();", button)
-                sleep(0.3)
+                sleep(0.2)
                 button = browser.find_element_by_xpath("//button[text()='En voir plus']")
         except NoSuchElementException:
             pass
@@ -116,21 +117,25 @@ def data_extraction(urls):
             p.add_donation(donation)
 
     res = []
-    driver = webdriver.Chrome("C:\\Users\\Tang\\Downloads\\chromedriver.exe")
+    driver = webdriver.Chrome()
     i = 1
 
-    for url in urls:
-        print(f'Project {i}: {url} scrapping.')
-        project = info_extraction(url)
-        actualities_extraction(project)
-        donations_extractions(project, driver)
+    while urls:
+        try:
+            print(f'Project {i}: {urls[0]} scrapping.')
+            project = info_extraction(urls[0])
+            actualities_extraction(project)
+            donations_extractions(project, driver)
 
-        res.append(project)
-        i += 1
-        sleep(randint(0, 2))
+            res.append(project)
+            i += 1
+            sleep(randint(0, 2))
+            del(urls[0])
+        except:
+            untreated_url.append(urls[0])
 
     driver.close()
-    return res
+    return res, untreated_url
 
 
 if __name__ == '__main__':
@@ -141,6 +146,20 @@ if __name__ == '__main__':
 
     with open('links', 'rb') as f:
         campaign_links = pickle.load(f)
-    campaigns = data_extraction(campaign_links)
+
+    number_to_treat = 5000
+    treated_campaigns = []
+    campaign_links_to_treat = deepcopy(campaign_links[:number_to_treat])
+    while campaign_links_to_treat:
+        campaigns, untreated_links = data_extraction(campaign_links_to_treat, [])
+        treated_campaigns.append(campaigns)
+        campaign_links_to_treat.extend(untreated_links)
+
+    with open('links', 'wb') as f:
+        pickle.dump(campaign_links[number_to_treat:], f)
+
+    with open('campaigns', 'rb') as f:
+        stored_campaigns = pickle.load(f)
+    treated_campaigns.extend(stored_campaigns)
     with open('campaigns', 'wb') as f:
-        pickle.dump(campaigns, f)
+        pickle.dump(treated_campaigns, f)
