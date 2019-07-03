@@ -107,8 +107,13 @@ def data_extraction(urls, untreated_url):
         for item in soup.select('div.backers-list__StyledCard-sc-13o55g1-1.gKLrNb'):
             user = item.select_one('div > span').text
             gift = item.select('div.marger__StyledMarger-q3lecu-0.bsSajs > p > span')
+
             if len(gift) == 2:
-                amount = int(gift[0].text[:-1].strip().replace(u'\xa0', u''))
+                try:
+                    amount = int(gift[0].text[:-1].strip().replace(u'\xa0', u''))
+                except ValueError:
+                    amount = 'No monetary information'
+
                 date = gift[1].text.strip()
                 donation = campaign.Donation(user, date, amount)
             else:
@@ -130,12 +135,13 @@ def data_extraction(urls, untreated_url):
             res.append(project)
             i += 1
             sleep(randint(0, 2))
-            del(urls[0])
         except:
-            untreated_url.append(urls[0])
+            pass
+
+        del(urls[0])
 
     driver.close()
-    return res, untreated_url
+    return res
 
 
 if __name__ == '__main__':
@@ -147,19 +153,22 @@ if __name__ == '__main__':
     with open('links', 'rb') as f:
         campaign_links = pickle.load(f)
 
-    number_to_treat = 5000
-    treated_campaigns = []
-    campaign_links_to_treat = deepcopy(campaign_links[:number_to_treat])
-    while campaign_links_to_treat:
-        campaigns, untreated_links = data_extraction(campaign_links_to_treat, [])
-        treated_campaigns.append(campaigns)
-        campaign_links_to_treat.extend(untreated_links)
+    while campaign_links:
+        print(len(campaign_links))
+        number_to_treat = 100
+        treated_campaigns = []
+        campaign_links_to_treat = deepcopy(campaign_links[:number_to_treat])
+        while campaign_links_to_treat:
+            campaigns = data_extraction(campaign_links_to_treat, [])
+            treated_campaigns.extend(campaigns)
 
-    with open('links', 'wb') as f:
-        pickle.dump(campaign_links[number_to_treat:], f)
+        with open('links', 'wb') as f:
+            pickle.dump(campaign_links[number_to_treat:], f)
 
-    with open('campaigns', 'rb') as f:
-        stored_campaigns = pickle.load(f)
-    treated_campaigns.extend(stored_campaigns)
-    with open('campaigns', 'wb') as f:
-        pickle.dump(treated_campaigns, f)
+        campaign_links = campaign_links[number_to_treat:]
+
+        with open('campaigns', 'rb') as f:
+            stored_campaigns = pickle.load(f)
+        treated_campaigns.extend(stored_campaigns)
+        with open('campaigns', 'wb') as f:
+            pickle.dump(treated_campaigns, f)
