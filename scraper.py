@@ -58,7 +58,7 @@ def links(max_p, current_page=1):
     return res
 
 
-def data_extraction(urls, untreated_url):
+def data_extraction(urls):
     def info_extraction(link):
         response = requests.get(link + '/tabs/description')
         soup = BeautifulSoup(response.content, 'html5lib')
@@ -159,7 +159,7 @@ if __name__ == '__main__':
         treated_campaigns = []
         campaign_links_to_treat = deepcopy(campaign_links[:number_to_treat])
         while campaign_links_to_treat:
-            campaigns = data_extraction(campaign_links_to_treat, [])
+            campaigns = data_extraction(campaign_links_to_treat)
             treated_campaigns.extend(campaigns)
 
         with open('links', 'wb') as f:
