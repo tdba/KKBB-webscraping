@@ -84,7 +84,7 @@ def store(campaigns):
 def store_campaigns_data(campaigns):
     with open('data/campaigns_data.csv', mode='w+') as csv_file:
         csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        csv_writer.writerow(['Campagne', 'NInfo', 'NPers', 'NDon', "NJump"])
+        csv_writer.writerow(['Campagne', 'NInfo', 'NPers', 'NDon', "NJump", "Amount"])
 
         for c in campaigns:
             n_pers = 0
@@ -103,13 +103,13 @@ def store_campaigns_data(campaigns):
             for don in c.donations:
                 if don.amount > min_don:
                     n_jump += 1
-            csv_writer.writerow([c.link, n_info, n_pers, len(c.donations), n_jump])
+            csv_writer.writerow([c.link, n_info, n_pers, len(c.donations), n_jump, c.current_amount])
 
 
 def store_donations_data(campaigns):
     with open('data/donations_data.csv', mode='w+') as csv_file:
         csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        csv_writer.writerow(['Campagne', 'Jump', 'Info', 'Pers'])
+        csv_writer.writerow(['Campagne', 'Jump', 'PersJ-1', 'InfoJ-1', 'NDonations'])
 
         for c in campaigns:
             try:
@@ -120,9 +120,15 @@ def store_donations_data(campaigns):
             grouped_events = [(k, [x for _, x in g]) for k, g in groupby(events, itemgetter(0))]
             grouped_events[:] = [events for events in grouped_events if events[0] <= c.end_date]
 
+            pers = False
+            info = False
+            donation = False
+            number_donations = 0
             for events_by_date in grouped_events:
-                pers = False
-                info = False
+                if donation:
+                    pers = False
+                    info = False
+                    donation = False
                 for e in events_by_date[1]:
                     if type(e) is campaign.News:
                         if e.kind == 'Informatif':
@@ -131,14 +137,16 @@ def store_donations_data(campaigns):
                             pers = True
 
                     if type(e) is campaign.Donation:
+                        donation = True
+                        number_donations += 1
                         jump = e.amount > min_don
-                        csv_writer.writerow([c.link, int(jump), int(info), int(pers)])
+                        csv_writer.writerow([c.link, int(jump), int(info), int(pers), number_donations])
 
 
-def store_messages_data(campaigns):
-    with open('data/messages_data.csv', mode='w+') as csv_file:
+def store_messages_data(campaigns, kind):
+    with open(f'data/{kind}_messages_data.csv', mode='w+') as csv_file:
         csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        csv_writer.writerow(['Campagne', 'Info', 'Pers', 'NDon'])
+        csv_writer.writerow(['Campagne', kind, 'PersJ-1', 'InfoJ-1', 'NDon'])
 
         for c in campaigns:
             if len(c.donations) == 0:
@@ -147,17 +155,35 @@ def store_messages_data(campaigns):
             grouped_events = [(k, [x for _, x in g]) for k, g in groupby(events, itemgetter(0))]
             grouped_events[:] = [events for events in grouped_events if events[0] <= c.end_date]
 
+            pers = False
+            info = False
+            donation = False
+            published = False
             number_donations = 0
             for events_by_date in grouped_events:
+
+                if donation:
+                    if not published:
+                        csv_writer.writerow([c.link, 0, int(info), int(pers), number_donations])
+                    published = False
+                    pers = False
+                    info = False
+                    donation = False
                 for e in events_by_date[1]:
                     if type(e) is campaign.News:
+                        if e.kind == kind:
+                            published = True
+                            csv_writer.writerow([c.link, 1, int(info), int(pers), number_donations])
                         if e.kind == 'Informatif':
-                            csv_writer.writerow([c.link, 1, 0, number_donations])
+                            info = True
                         if e.kind == 'Persuasif':
-                            csv_writer.writerow([c.link, 0, 1, number_donations])
+                            pers = True
 
                     if type(e) is campaign.Donation:
+                        donation = True
                         number_donations += 1
+            if donation and not published:
+                csv_writer.writerow([c.link, 0, int(info), int(pers), number_donations])
 
 
 if __name__ == '__main__':
@@ -169,8 +195,9 @@ if __name__ == '__main__':
     # store(projects)
     # store_campaigns_data(projects)
 
-    # store_donations_data(projects)
-    store_messages_data(projects)
+    store_donations_data(projects)
+    store_messages_data(projects, 'Informatif')
+    store_messages_data(projects, 'Persuasif')
 
     with open('data/classified', 'wb') as f:
         pickle.dump(projects, f)
