@@ -7,3 +7,5 @@
 *.xlsx
 *.xls
 .Rhistory
+/venv/
+/.ipynb_checkpoints/
