@@ -18,15 +18,17 @@ class Campaign:
         self.nb_contrib = nb_contrib
         self.completion_rate = completion_rate
         self.categories = categories
-        self.comments = 0
         self.num_pers = 0
         self.num_info = 0
+        self.hrp = 0
+        self.other_projects = False
 
         self.end_date = dt.datetime.strptime(end_date, '%d/%m/%Y').date()
 
         self.actualities = []
         self.donations = []
         self.contributors = []
+        self.comments = []
 
     def add_donation(self, donation):
         if donation.user not in self.contributors:
