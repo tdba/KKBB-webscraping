@@ -67,6 +67,30 @@ def actualities_extraction(p):
             p.actualities.append(actuality)
 
 
+def highest_reward_price_extraction(p):
+    response = requests.get(p.link + '/tabs/rewards')
+    sleep(randint(0, 4))
+    while response.status_code != 200:
+        response = requests.get(p.link + '/tabs/rewards')
+        sleep(randint(0, 4))
+    soup = BeautifulSoup(response.content, 'html5lib')
+
+    reward_class = 'k-TitleWithStroke__title k-TitleWithStroke__title--senary'
+
+    p.hrp = max([int(e.string[5:-2].strip().replace(u'\xa0', u'')) for e in soup.find_all('h2', class_=reward_class)])
+
+
+def other_projects_extraction(p):
+    response = requests.get(p.project_holder)
+    sleep(randint(0, 4))
+    while response.status_code != 200:
+        response = requests.get(p.project_holder)
+        sleep(randint(0, 4))
+    soup = BeautifulSoup(response.content, 'html5lib')
+
+    p.other_projects = len(soup.find_all('div', class_='project')) > 1
+
+
 def display_all(wait):
     sleep(2)
     try:
@@ -84,6 +108,7 @@ def donations_extraction(p, browser, wait):
 
     inner_html = browser.execute_script("return document.body.innerHTML")
     soup = BeautifulSoup(inner_html, 'html5lib')
+
     for item in soup.select('div.backer-card__StyledCard-zl7grf-0.hSpaUR'):
         user = item.select_one('div > span').text
         gift = item.select('div.marger__StyledMarger-q3lecu-0.bsSajs > p > span')
@@ -108,35 +133,66 @@ def coms_extraction(p, browser, wait):
 
     inner_html = browser.execute_script("return document.body.innerHTML")
     soup = BeautifulSoup(inner_html, 'html5lib')
-    p.nb_comments = len(soup.select('div.backer-card__StyledCard-zl7grf-0.hSpaUR'))
+
+    p.comments = []
+
+    for com in soup.select('span.k-u-color-font1.k-u-size-micro.k-u-weight-light'):
+        delay = com.string
+        if any(ti in delay for ti in ['minute', 'heure']):
+            ddelay = 1
+        else:
+            ddelay = int(delay.split()[0])
+
+        p.comments.append((pd.to_datetime('today') - pd.to_timedelta(ddelay, 'days')).date())
 
 
 def data_extraction(df):
 
     res = []
-    #driver = webdriver.Chrome(ChromeDriverManager().install())
-    #wait = WebDriverWait(driver, 2)
 
     for i, row in df.iterrows():
         print(f'Project {i}: {row.url} scrapping.')
         try:
             project = info_extraction(row.url, row.cats)
             actualities_extraction(project)
-            #donations_extraction(project, driver, wait)
-            #coms_extraction(project, driver, wait)
 
             res.append(project)
         except IndexError:
-            print(f'Fail on project {i}: {row.url} scrapping.')
+            print(f'Fail on project {i}: {row.url} scraping.')
 
-    #driver.close()
     return res
 
 
-if __name__ == '__main__':
-    links = pd.read_pickle('data/links.pkl')
-    #links = links.loc[:50]
-    camp_list = data_extraction(links)
+def select_data_extraction(projects):
+    driver = webdriver.Chrome(ChromeDriverManager().install())
+    wait = WebDriverWait(driver, 2)
 
-    with open('data/campaigns.pkl', 'wb') as f:
-        pickle.dump(camp_list, f)
+    for i, project in enumerate(projects):
+        print(f'Project {i}: {project.link} scraping.')
+        highest_reward_price_extraction(project)
+        other_projects_extraction(project)
+        donations_extraction(project, driver, wait)
+        coms_extraction(project, driver, wait)
+
+    driver.close()
+
+
+if __name__ == '__main__':
+    ex_type = input('Init? (y/n)').lower()
+    if ex_type == 'y':
+        links = pd.read_pickle('data/links.pkl')
+        links = links.loc[:22000]
+        camp_list = data_extraction(links)
+
+        with open('data/campaigns.pkl', 'wb') as f:
+            pickle.dump(camp_list, f)
+
+    else:
+        with open('data/selected_campaigns.pkl', 'rb') as f:
+            campaigns = pickle.load(f)
+
+        select_data_extraction(campaigns)
+
+        with open('data/filled_selected_campaigns.pkl', 'wb') as f:
+            pickle.dump(campaigns, f)
+
