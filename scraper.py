@@ -136,14 +136,18 @@ def coms_extraction(p, browser, wait):
 
     p.comments = []
 
-    for com in soup.select('span.k-u-color-font1.k-u-size-micro.k-u-weight-light'):
-        delay = com.string
+    p_holder = soup.find('div', class_='k-u-weight-regular owner-info__StyledOwnerName-tqxc8c-6 dyAQdt').string
+
+    for com in soup.select('div.comment__StyledGrid-sc-8s8e85-2.iFjxIp'):
+        author = com.select_one('span > div > div > span').string
+        delay = com.select_one('span.k-u-color-font1.k-u-size-micro.k-u-weight-light').string
         if any(ti in delay for ti in ['minute', 'heure']):
             ddelay = 1
         else:
             ddelay = int(delay.split()[0])
 
-        p.comments.append((pd.to_datetime('today') - pd.to_timedelta(ddelay, 'days')).date())
+        if author != p_holder:
+            p.comments.append((pd.to_datetime('today') - pd.to_timedelta(ddelay, 'days')).date())
 
 
 def data_extraction(df):
